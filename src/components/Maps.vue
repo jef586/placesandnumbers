@@ -2,7 +2,7 @@
   <v-card 
     class="maps-card elevation-8" 
     rounded="xl"
-    :class="{ 'has-markers': filteredResults.length > 0 }"
+    :class="{ 'has-markers': validResults.length > 0 }"
   >
     <!-- Header with Quick Navigation -->
     <v-card-title class="maps-header d-flex align-center justify-space-between pa-4">
@@ -14,13 +14,13 @@
       </div>
       <div class="d-flex align-center gap-2">
         <v-chip 
-          v-if="filteredResults.length > 0"
+          v-if="validResults.length > 0"
           color="primary" 
           variant="elevated" 
           size="small"
           class="me-2"
         >
-          {{ filteredResults.length }} {{ filteredResults.length === 1 ? 'marcador' : 'marcadores' }}
+          {{ validResults.length }} {{ validResults.length === 1 ? 'marcador' : 'marcadores' }}
         </v-chip>
         <!-- Quick Navigation Button -->
         <v-btn
@@ -42,7 +42,7 @@
     <!-- Map Container -->
     <div class="map-container">
       <!-- Empty State -->
-      <div v-if="filteredResults.length === 0" class="empty-map-state">
+      <div v-if="store.searchResults.length === 0" class="empty-map-state">
         <v-icon size="80" color="grey-lighten-2" class="mb-4">
           mdi-map-outline
         </v-icon>
@@ -52,6 +52,14 @@
         <p class="text-body-2 text-grey">
           Los marcadores aparecerán aquí cuando realices una búsqueda
         </p>
+      </div>
+
+      <!-- Debug Info -->
+      <div v-if="store.searchResults.length > 0 && validResults.length === 0" class="debug-info pa-4">
+        <v-alert type="warning" variant="tonal">
+          <strong>Debug:</strong> Hay {{ store.searchResults.length }} resultados pero 0 válidos para el mapa.
+          <br>Revisa la consola para más detalles.
+        </v-alert>
       </div>
 
       <!-- Google Map -->
@@ -65,93 +73,60 @@
         @click="onMapClick"
       >
         <!-- Markers -->
+        <template v-if="validResults.length > 0">
+          {{ console.log('Intentando renderizar', validResults.length, 'marcadores') }}
+        </template>
         <Marker
-          v-for="(result, index) in filteredResults"
-          :key="result.place_id || index"
+          v-for="(result, index) in validResults"
+          :key="result.placeId || index"
           :options="{
-            position: {
-              lat: typeof result.geometry.location.lat === 'function' ? result.geometry.location.lat() : result.geometry.location.lat,
-              lng: typeof result.geometry.location.lng === 'function' ? result.geometry.location.lng() : result.geometry.location.lng
-            },
-            icon: createCustomMarker(index + 1),
-            title: result.name,
-            animation: google.maps.Animation.DROP
+            position: { lat: result.location.lat, lng: result.location.lng },
+            icon: createCustomMarker(index + 1, result.name === store.selectedLocationName),
+            title: result.name
           }"
-          @click="selectMarker(result, index)"
         >
-          <!-- Info Window -->
-          <InfoWindow
-            v-if="selectedMarker && selectedMarker.place_id === result.place_id"
-            :options="{
-              pixelOffset: { width: 0, height: -35 },
-              maxWidth: 300
-            }"
-          >
-            <div class="info-window-content">
-              <div class="info-header">
-                <h4 class="info-title">{{ result.name }}</h4>
-                <v-btn
-                  @click="closeInfoWindow"
-                  icon
-                  size="x-small"
-                  variant="text"
-                  class="close-btn"
-                >
-                  <v-icon size="small">mdi-close</v-icon>
-                </v-btn>
-              </div>
-              
-              <div class="info-body">
-                <div v-if="result.formatted_address || result.vicinity" class="info-item">
-                  <v-icon size="small" class="me-2">mdi-map-marker</v-icon>
-                  <span class="info-text">{{ result.formatted_address || result.vicinity }}</span>
-                </div>
-                
-                <div v-if="result.formatted_phone_number || result.international_phone_number" class="info-item">
-                  <v-icon size="small" class="me-2">mdi-phone</v-icon>
-                  <span class="info-text">{{ result.formatted_phone_number || result.international_phone_number }}</span>
-                </div>
-                
-                <div v-if="result.website" class="info-item">
-                  <v-icon size="small" class="me-2">mdi-web</v-icon>
-                  <a :href="result.website" target="_blank" class="info-link">
-                    Visitar sitio web
-                  </a>
-                </div>
-                
-                <div v-if="result.rating" class="info-item">
-                  <v-icon size="small" class="me-2">mdi-star</v-icon>
-                  <div class="d-flex align-center">
-                    <v-rating
-                      :model-value="result.rating"
-                      color="amber"
-                      density="compact"
-                      size="x-small"
-                      readonly
-                      half-increments
-                    ></v-rating>
-                    <span class="rating-text ms-2">({{ result.rating }})</span>
-                  </div>
-                </div>
-              </div>
-              
-              <div class="info-actions mt-3">
-                <v-btn
-                  @click="scrollToResultsAndHighlight(result)"
-                  size="small"
-                  color="primary"
-                  variant="elevated"
-                  block
-                >
-                  <v-icon size="small" class="me-1">mdi-format-list-bulleted</v-icon>
-                  Ver en resultados
-                </v-btn>
-              </div>
+          <InfoWindow>
+            <div class="info-window">
+              <h4>{{ result.name }}</h4>
+              <p v-if="result.phoneNumber">📞 {{ result.phoneNumber }}</p>
+              <p v-if="result.website">
+                <a :href="result.website" target="_blank">🌐 Sitio web</a>
+              </p>
             </div>
           </InfoWindow>
         </Marker>
+
+        <!-- Marcador especial para la ubicación seleccionada -->
+        <template v-if="selectedLocationMarker">
+          <Marker
+            :key="`selected-${selectedLocationMarker.name}`"
+            :options="{
+              position: { lat: selectedLocationMarker.lat, lng: selectedLocationMarker.lng },
+              icon: createSelectedLocationMarker(),
+              title: selectedLocationMarker.name,
+              zIndex: 1000
+            }"
+          >
+            <InfoWindow :options="{ disableAutoPan: false }">
+              <div class="selected-location-info">
+                <div class="selected-header">
+                  <v-icon color="primary" size="small" class="me-2">mdi-map-marker-star</v-icon>
+                  <span class="selected-title">Ubicación Seleccionada</span>
+                </div>
+                <h4 class="location-name">{{ selectedLocationMarker.name }}</h4>
+              </div>
+            </InfoWindow>
+          </Marker>
+        </template>
       </GoogleMap>
 
+        <!-- Etiqueta flotante para la ubicación seleccionada -->
+        <div v-if="store.selectedLocationName && selectedLocationMarker" class="selected-location-label">
+          <div class="label-content">
+            <v-icon color="white" size="small" class="me-2">mdi-map-marker-star</v-icon>
+            <span class="label-text">{{ store.selectedLocationName }}</span>
+          </div>
+        </div>
       <!-- Map Controls -->
       <div class="map-controls">
         <!-- Center Map Button -->
@@ -182,7 +157,7 @@
 
         <!-- Fit Bounds Button -->
         <v-btn
-          v-if="filteredResults.length > 1"
+          v-if="validResults.length > 1"
           @click="fitBounds"
           fab
           size="small"
@@ -239,7 +214,30 @@ const selectedMarker = ref(null)
 
 // Computed properties
 const center = computed(() => store.center)
-const filteredResults = computed(() => store.searchResults)
+
+// Computed property para resultados válidos con geometry
+const validResults = computed(() => {
+  const filtered = store.searchResults.filter(result => 
+    result && result.location && result.location.lat && result.location.lng
+  )
+  console.log('validResults computed:', filtered.length, filtered)
+  console.log('store.searchResults:', store.searchResults.length, store.searchResults)
+  return filtered
+})
+
+// Computed property para el marcador de ubicación seleccionada
+const selectedLocationMarker = computed(() => {
+  if (!store.selectedLocationName) return null
+  
+  const selectedResult = validResults.value.find(result => result.name === store.selectedLocationName)
+  if (!selectedResult) return null
+  
+  return {
+    lat: selectedResult.location.lat,
+    lng: selectedResult.location.lng,
+    name: selectedResult.name
+  }
+})
 
 // Map options
 const mapOptions = {
@@ -267,11 +265,13 @@ watch(() => store.searchResults, (newResults) => {
     if (newResults.length === 1) {
       // Center on single result
       const result = newResults[0]
-      store.center = {
-        lat: typeof result.geometry.location.lat === 'function' ? result.geometry.location.lat() : result.geometry.location.lat,
-        lng: typeof result.geometry.location.lng === 'function' ? result.geometry.location.lng() : result.geometry.location.lng
+      if (result.geometry && result.geometry.location) {
+        store.center = {
+          lat: typeof result.geometry.location.lat === 'function' ? result.geometry.location.lat() : result.geometry.location.lat,
+          lng: typeof result.geometry.location.lng === 'function' ? result.geometry.location.lng() : result.geometry.location.lng
+        }
+        zoom.value = 15
       }
-      zoom.value = 15
     } else {
       // Fit bounds for multiple results
       nextTick(() => {
@@ -289,29 +289,31 @@ watch(() => store.selectedCityLocation, (newLocation) => {
 }, { immediate: true })
 
 // Methods
-const createCustomMarker = (number) => {
-  const svg = `
-    <svg width="32" height="40" viewBox="0 0 32 40" xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
-          <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="rgba(0,0,0,0.3)"/>
-        </filter>
-      </defs>
-      <path d="M16 0C7.2 0 0 7.2 0 16c0 12 16 24 16 24s16-12 16-24C32 7.2 24.8 0 16 0z" 
-            fill="#1976d2" filter="url(#shadow)"/>
-      <circle cx="16" cy="16" r="12" fill="white"/>
-      <text x="16" y="21" text-anchor="middle" font-family="Arial, sans-serif" 
-            font-size="12" font-weight="bold" fill="#1976d2">${number}</text>
-    </svg>
-  `
+const createCustomMarker = (number, isSelected = false) => {
+  // Crear un marcador diferente si está seleccionado
+  if (isSelected) {
+    return {
+      url: 'https://maps.google.com/mapfiles/ms/icons/blue-dot.png',
+      scaledSize: new google.maps.Size(40, 40),
+      anchor: new google.maps.Point(20, 40)
+    }
+  }
   
+  // Usar un icono simple de Google Maps por ahora
   return {
-    url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`,
-    scaledSize: new google.maps.Size(32, 40),
-    anchor: new google.maps.Point(16, 40)
+    url: 'https://maps.google.com/mapfiles/ms/icons/red-dot.png',
+    scaledSize: new google.maps.Size(32, 32),
+    anchor: new google.maps.Point(16, 32)
   }
 }
 
+const createSelectedLocationMarker = () => {
+  return {
+    url: 'https://maps.google.com/mapfiles/ms/icons/yellow-dot.png',
+    scaledSize: new google.maps.Size(48, 48),
+    anchor: new google.maps.Point(24, 48)
+  }
+}
 const selectMarker = (result, index) => {
   selectedMarker.value = result
 }
@@ -325,8 +327,8 @@ const onMapClick = () => {
 }
 
 const centerMap = () => {
-  if (filteredResults.value.length > 0) {
-    const firstResult = filteredResults.value[0]
+  if (validResults.value.length > 0) {
+    const firstResult = validResults.value[0]
     store.center = {
       lat: typeof firstResult.geometry.location.lat === 'function' ? firstResult.geometry.location.lat() : firstResult.geometry.location.lat,
       lng: typeof firstResult.geometry.location.lng === 'function' ? firstResult.geometry.location.lng() : firstResult.geometry.location.lng
@@ -343,9 +345,9 @@ const toggleMapType = () => {
 }
 
 const fitBounds = () => {
-  if (filteredResults.value.length > 1) {
+  if (validResults.value.length > 1) {
     const bounds = new google.maps.LatLngBounds()
-    filteredResults.value.forEach(result => {
+    validResults.value.forEach(result => {
       bounds.extend({
         lat: typeof result.geometry.location.lat === 'function' ? result.geometry.location.lat() : result.geometry.location.lat,
         lng: typeof result.geometry.location.lng === 'function' ? result.geometry.location.lng() : result.geometry.location.lng
@@ -647,6 +649,82 @@ const scrollToResultsAndHighlight = (result) => {
   }
 }
 
+/* Etiqueta flotante para ubicación seleccionada */
+.selected-location-label {
+  position: absolute;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+  pointer-events: none;
+}
+
+.label-content {
+  background: linear-gradient(135deg, #1976d2 0%, #1565c0 100%);
+  color: white;
+  padding: 8px 16px;
+  border-radius: 20px;
+  box-shadow: 0 4px 12px rgba(25, 118, 210, 0.3);
+  display: flex;
+  align-items: center;
+  font-weight: 500;
+  font-size: 0.9rem;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  animation: bounceIn 0.5s ease-out;
+}
+
+.label-text {
+  white-space: nowrap;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@keyframes bounceIn {
+  0% {
+    opacity: 0;
+    transform: translateX(-50%) scale(0.3);
+  }
+  50% {
+    opacity: 1;
+    transform: translateX(-50%) scale(1.05);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(-50%) scale(1);
+  }
+}
+
+/* Estilos para el InfoWindow de ubicación seleccionada */
+.selected-location-info {
+  padding: 12px;
+  min-width: 200px;
+}
+
+.selected-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.selected-title {
+  font-size: 0.85rem;
+  color: #666;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.location-name {
+  margin: 0;
+  color: #1976d2;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
 /* Tema oscuro */
 @media (prefers-color-scheme: dark) {
   .maps-card {
@@ -674,6 +752,18 @@ const scrollToResultsAndHighlight = (result) => {
   
   .info-link {
     color: #64b5f6;
+  }
+}
+
+/* Responsive para la etiqueta */
+@media (max-width: 600px) {
+  .label-content {
+    padding: 6px 12px;
+    font-size: 0.8rem;
+  }
+  
+  .label-text {
+    max-width: 150px;
   }
 }
 </style>

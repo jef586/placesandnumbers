@@ -15,6 +15,27 @@
       </v-col>
     </v-row>
 
+    <!-- Mensaje de ubicación seleccionada -->
+    <v-row v-if="store.selectedLocationName" class="mb-3">
+      <v-col cols="12">
+        <v-alert
+          type="info"
+          variant="tonal"
+          closable
+          @click:close="clearSelectedLocation"
+          class="location-alert"
+        >
+          <template v-slot:prepend>
+            <v-icon>mdi-map-marker</v-icon>
+          </template>
+          <div class="d-flex align-center">
+            <span class="font-weight-medium">Ubicación seleccionada:</span>
+            <span class="ml-2 text-primary font-weight-bold">{{ store.selectedLocationName }}</span>
+          </div>
+        </v-alert>
+      </v-col>
+    </v-row>
+
     <!-- Main Content -->
     <v-row class="main-content" style="height: calc(100vh - 200px);">
       <!-- Left Column - Map -->
@@ -117,6 +138,9 @@ import HelloWorld from '@/components/HelloWorld.vue'
 import Search from '@/components/Search.vue'
 import Results from '@/components/Results.vue'
 import Maps from '@/components/Maps.vue'
+import { useAppStore } from '@/store/app'
+
+const store = useAppStore()
 
 const scrollToSection = (section) => {
   let selector = '';
@@ -140,6 +164,10 @@ const scrollToSection = (section) => {
     });
   }
 };
+
+const clearSelectedLocation = () => {
+  store.setSelectedLocationName('')
+}
 </script>
 
 <style scoped>
@@ -376,6 +404,22 @@ const scrollToSection = (section) => {
   .app-footer {
     background: rgba(255, 255, 255, 0.05);
     border-color: rgba(255, 255, 255, 0.1);
+  }
+}
+.location-alert {
+  animation: slideInDown 0.3s ease-out;
+  border-left: 4px solid #1976d2;
+  box-shadow: 0 4px 12px rgba(25, 118, 210, 0.15);
+}
+
+@keyframes slideInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 </style>

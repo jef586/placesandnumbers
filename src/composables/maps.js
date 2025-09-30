@@ -18,6 +18,12 @@ export const getPlaceDetails = (placeId) => {
       },
       (place, status) => {
         if (status === google.maps.places.PlacesServiceStatus.OK) {
+          // Verificar que place.geometry y place.geometry.location existan
+          if (!place.geometry || !place.geometry.location) {
+            reject("Geometry or location not available for this place");
+            return;
+          }
+
           // Define y llena 'details' con la información que quieres devolver
           const details = {
             placeId: place.place_id,
@@ -25,8 +31,8 @@ export const getPlaceDetails = (placeId) => {
             phoneNumber: place.formatted_phone_number,
             website: place.website,
             location: {
-              lat: place.geometry.location.lat(),
-              lng: place.geometry.location.lng(),
+              lat: typeof place.geometry.location.lat === 'function' ? place.geometry.location.lat() : place.geometry.location.lat,
+              lng: typeof place.geometry.location.lng === 'function' ? place.geometry.location.lng() : place.geometry.location.lng,
             },
             photos: place.photos
               ? place.photos.map((photo) => photo.getUrl())

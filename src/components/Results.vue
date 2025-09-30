@@ -192,8 +192,8 @@ const results = computed(() => {
     website: result.website,
     rating: result.rating,
     address: result.formatted_address || result.vicinity,
-    geometry: result.geometry,
-    place_id: result.place_id
+    location: result.location, // Usar location en lugar de geometry
+    place_id: result.place_id || result.placeId
   }))
 })
 
@@ -212,12 +212,21 @@ const formatPhoneNumber = (phone) => {
 }
 
 const showOnMap = (item) => {
-  if (item.geometry && item.geometry.location) {
+  console.log('showOnMap called with item:', item)
+  
+  // Verificar si el item tiene la estructura correcta de location
+  if (item.location && item.location.lat && item.location.lng) {
     // Center map on the selected location
     store.center = {
-      lat: typeof item.geometry.location.lat === 'function' ? item.geometry.location.lat() : item.geometry.location.lat,
-      lng: typeof item.geometry.location.lng === 'function' ? item.geometry.location.lng() : item.geometry.location.lng
+      lat: item.location.lat,
+      lng: item.location.lng
     }
+    
+    // Guardar el nombre de la ubicación seleccionada
+    store.setSelectedLocationName(item.name)
+    
+    console.log('Map centered to:', store.center)
+    console.log('Selected location name:', item.name)
     
     // Scroll to map section
     nextTick(() => {
@@ -227,8 +236,12 @@ const showOnMap = (item) => {
           behavior: 'smooth', 
           block: 'start' 
         })
+      } else {
+        console.warn('Map section not found')
       }
     })
+  } else {
+    console.error('Item does not have valid location data:', item)
   }
 }
 
