@@ -19,47 +19,44 @@
       <div class="topbar-right">
         <button
           @click="toggleDark"
-          class="topbar-btn relative"
+          class="topbar-btn"
           title="Cambiar tema"
         >
           <Sun v-if="!isDark" class="w-5 h-5" />
           <Moon v-else class="w-5 h-5" />
         </button>
 
-        <div class="notifications-btn relative">
-          <button class="topbar-btn" title="Notificaciones">
-            <Bell class="w-5 h-5" />
-            <span class="notification-dot"></span>
-          </button>
-        </div>
-
         <div class="avatar-dropdown">
           <button class="avatar-btn">
             <div class="avatar">
               <User class="w-4 h-4" />
             </div>
-            <span class="avatar-name">Usuario</span>
-            <ChevronDown class="w-4 h-4 text-gray-400" />
+            <span class="avatar-name">{{ userEmail }}</span>
           </button>
         </div>
+
+        <button @click="$emit('logout')" class="topbar-btn" title="Cerrar sesión">
+          <LogOut class="w-5 h-5" />
+        </button>
       </div>
     </div>
   </header>
 </template>
 
 <script setup>
-import { ref, inject } from 'vue'
-import { Menu, Search, Bell, Sun, Moon, User, ChevronDown } from '@lucide/vue'
+import { ref, inject, computed } from 'vue'
+import { useAppStore } from '@/store/app'
+import { Menu, Search, Sun, Moon, User, LogOut } from '@lucide/vue'
 
-defineProps({
-  collapsed: Boolean,
-})
+defineProps({ collapsed: Boolean })
+defineEmits(['toggleSidebar', 'logout'])
 
-defineEmits(['toggleSidebar'])
-
+const store = useAppStore()
 const isDark = inject('isDark')
 const toggleDark = inject('toggleDark')
 const globalSearch = ref('')
+
+const userEmail = computed(() => store.user?.email || 'Usuario')
 </script>
 
 <style scoped>
@@ -97,23 +94,13 @@ const globalSearch = ref('')
   @apply w-full h-10 pl-10 pr-4 rounded-xl text-sm;
   @apply bg-gray-50 dark:bg-white/5;
   @apply border border-gray-200 dark:border-white/10;
-  @apply text-gray-900 dark:text-white;
-  @apply placeholder:text-gray-400;
+  @apply text-gray-900 dark:text-white placeholder:text-gray-400;
   @apply focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500;
   @apply transition-all duration-200;
 }
 
 .topbar-right {
   @apply flex items-center gap-2;
-}
-
-.notifications-btn {
-  @apply relative;
-}
-
-.notification-dot {
-  @apply absolute top-2 right-2 w-2 h-2 rounded-full bg-blue-500;
-  @apply ring-2 ring-white dark:ring-[#0f1219];
 }
 
 .avatar-dropdown {
@@ -132,7 +119,6 @@ const globalSearch = ref('')
 }
 
 .avatar-name {
-  @apply text-sm font-medium text-gray-700 dark:text-gray-300;
+  @apply text-sm font-medium text-gray-700 dark:text-gray-300 max-w-[120px] truncate;
 }
-
 </style>

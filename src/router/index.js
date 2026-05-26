@@ -2,8 +2,14 @@ import { createRouter, createWebHistory } from 'vue-router'
 
 const routes = [
   {
+    path: '/auth',
+    name: 'Auth',
+    component: () => import('@/views/Auth.vue'),
+  },
+  {
     path: '/',
     component: () => import('@/layouts/default/Default.vue'),
+    meta: { requiresAuth: true },
     children: [
       {
         path: '',

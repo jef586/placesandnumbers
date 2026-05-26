@@ -102,7 +102,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted } from 'vue'
+import { computed } from 'vue'
 import { useAppStore } from '@/store/app'
 import {
   MapPin, Building2, Users, TrendingUp,
@@ -112,9 +112,6 @@ import {
 
 const store = useAppStore()
 
-onMounted(() => {
-  store.initStats()
-})
 
 const stats = computed(() => [
   {
@@ -157,7 +154,7 @@ const recentActivity = computed(() => {
   prospects.forEach(p => {
     activities.push({
       text: `Nuevo prospecto: ${p.name}`,
-      time: new Date(p.createdAt).toLocaleDateString('es-AR'),
+      time: new Date(p.created_at).toLocaleDateString('es-AR'),
       color: 'bg-blue-500',
     })
   })

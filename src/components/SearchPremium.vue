@@ -125,7 +125,7 @@ const handleSearch = async () => {
 
     store.setCurrentSearchParams({ city: selectedCity.value, type: businessType.value })
 
-    initSearch(selectedCity.value, businessType.value, (results) => {
+    initSearch(selectedCity.value, businessType.value, async (results) => {
       store.setSearchResults(results)
       isLoading.value = false
 
@@ -134,6 +134,7 @@ const handleSearch = async () => {
           type: 'success',
           text: `¡Encontramos ${results.length} lugares!`,
         }
+        await store.saveSearch(selectedCity.value, businessType.value, results.length)
       } else {
         searchMessage.value = {
           type: 'warning',
