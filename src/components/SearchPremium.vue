@@ -142,7 +142,7 @@ const handleSearch = async () => {
         }
       }
       emit('search-complete', results)
-    })
+    }, store.selectedCityLocation)
   } catch (error) {
     isLoading.value = false
     searchMessage.value = {

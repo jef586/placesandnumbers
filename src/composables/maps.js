@@ -52,34 +52,32 @@ export const getPlaceDetails = (placeId) => {
   });
 };
 
-export const initSearch = async (city, business, callback) => {
+export const initSearch = async (city, business, callback, location) => {
   const service = new google.maps.places.PlacesService(
     document.createElement("div")
   );
 
-  // Obtener la ubicación de la ciudad
-  function getCityLocation(city, callback) {
+  if (!location) {
     const geocoder = new google.maps.Geocoder();
-    geocoder.geocode({ address: city }, (results, status) => {
+    geocoder.geocode({ address: city, componentRestrictions: { country: 'AR' } }, (results, status) => {
       if (status === "OK" && results[0]) {
-        callback(results[0].geometry.location);
+        location = results[0].geometry.location;
+        doSearch(location);
       } else {
-        console.error(
-          "Geocode no tuvo éxito por la siguiente razón: " + status
-        );
-        callback(null); // Devolver null en caso de error
+        console.error("Geocode no tuvo éxito por la siguiente razón: " + status);
+        callback(null);
       }
     });
+  } else {
+    doSearch(location);
   }
 
-  getCityLocation(city, (location) => {
-    if (!location) {
-      return; // Salir si no se pudo obtener la ubicación
-    }
+  function doSearch(loc) {
+    if (!loc) return;
 
     const request = {
-      location: location,
-      radius: "50000", // Define el radio en metros
+      location: loc,
+      radius: "50000",
       keyword: business,
       maxResultCount: 30,
     };
@@ -87,22 +85,20 @@ export const initSearch = async (city, business, callback) => {
     console.log(request);
     service.nearbySearch(request, async (results, status) => {
       if (status === google.maps.places.PlacesServiceStatus.OK) {
-        // Crear un array de promesas para obtener los detalles de todos los lugares encontrados
         const detailsPromises = results.map((result) =>
           getPlaceDetails(result.place_id)
         );
 
         try {
-          // Esperar a que todas las promesas se resuelvan
           const detailsArray = await Promise.all(detailsPromises);
           console.log(detailsArray);
-          callback(detailsArray); // Pasar el array de detalles al callback
+          callback(detailsArray);
         } catch (error) {
           console.error(error);
         }
       }
     });
-  });
+  }
 };
 
 

@@ -80,14 +80,13 @@
 
         <!-- Phone Column -->
         <template v-slot:item.phone="{ item }">
-          <div v-if="item.phone" class="phone-actions">
-            <div class="text-body-2 mb-1">
-              {{ formatPhoneNumber(item.phone) }}
+          <div class="phone-actions">
+            <div class="text-body-2 mb-1" :class="{ 'text-grey': !item.phone }">
+              {{ item.phone ? formatPhoneNumber(item.phone) : 'No disponible' }}
             </div>
             <div class="d-flex gap-1">
               <v-btn
-                :href="`https://wa.me/${item.phone.replace(/\D/g, '')}`"
-                target="_blank"
+                @click="openWhatsApp(item)"
                 size="x-small"
                 color="success"
                 variant="tonal"
@@ -97,6 +96,7 @@
                 WhatsApp
               </v-btn>
               <v-btn
+                v-if="item.phone"
                 :href="`tel:${item.phone}`"
                 size="x-small"
                 color="primary"
@@ -108,7 +108,6 @@
               </v-btn>
             </div>
           </div>
-          <span v-else class="text-grey">No disponible</span>
         </template>
 
         <!-- Website Column -->
@@ -182,8 +181,10 @@
 <script setup>
 import { computed, ref, nextTick } from 'vue'
 import { useAppStore } from '@/store/app'
+import { useWhatsApp } from '@/composables/useWhatsApp'
 
 const store = useAppStore()
+const { openWhatsApp } = useWhatsApp()
 
 const results = computed(() => {
   return store.searchResults.map(result => ({

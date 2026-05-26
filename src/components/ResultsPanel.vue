@@ -77,15 +77,13 @@
                   <ExternalLink class="w-3.5 h-3.5" />
                   Web
                 </a>
-                <a
-                  v-if="result.phoneNumber"
-                  :href="`https://wa.me/${result.phoneNumber.replace(/\D/g, '')}`"
-                  target="_blank"
+                <button
+                  @click.stop="openWhatsApp(result)"
                   class="action-btn secondary"
                 >
                   <MessageCircle class="w-3.5 h-3.5" />
                   WhatsApp
-                </a>
+                </button>
                 <button
                   @click.stop="addToProspects(result)"
                   class="action-btn primary"
@@ -106,6 +104,7 @@
 <script setup>
 import { computed } from 'vue'
 import { useAppStore } from '@/store/app'
+import { useWhatsApp } from '@/composables/useWhatsApp'
 import {
   List, MapPin, Building2, Star, Phone, Globe,
   ExternalLink, MessageCircle, UserPlus,
@@ -156,6 +155,8 @@ const addToProspects = (result) => {
     city: store.currentSearchParams.city,
   })
 }
+
+const { openWhatsApp } = useWhatsApp()
 </script>
 
 <style scoped>
