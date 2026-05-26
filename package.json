@@ -2,6 +2,7 @@
   "name": "vuetify-project",
   "version": "0.0.0",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
@@ -10,10 +11,15 @@
   },
   "dependencies": {
     "@googlemaps/js-api-loader": "^1.16.2",
+    "@lucide/vue": "^1.16.0",
     "@mdi/font": "7.0.96",
+    "@vueuse/core": "^14.3.0",
+    "autoprefixer": "^10.5.0",
     "core-js": "^3.29.0",
     "pinia": "^2.0.0",
+    "postcss": "^8.5.15",
     "roboto-fontface": "*",
+    "tailwindcss": "^3.4.19",
     "vue": "^3.2.0",
     "vue-router": "^4.0.0",
     "vue3-google-map": "^0.19.0",

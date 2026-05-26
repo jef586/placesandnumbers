@@ -65,6 +65,7 @@
       <!-- Google Map -->
       <GoogleMap
         :api-key="apiKey"
+        :libraries="['places']"
         style="width: 100%; height: 100%"
         :center="center"
         :zoom="zoom"
@@ -265,10 +266,10 @@ watch(() => store.searchResults, (newResults) => {
     if (newResults.length === 1) {
       // Center on single result
       const result = newResults[0]
-      if (result.geometry && result.geometry.location) {
+      if (result.location && result.location.lat) {
         store.center = {
-          lat: typeof result.geometry.location.lat === 'function' ? result.geometry.location.lat() : result.geometry.location.lat,
-          lng: typeof result.geometry.location.lng === 'function' ? result.geometry.location.lng() : result.geometry.location.lng
+          lat: result.location.lat,
+          lng: result.location.lng
         }
         zoom.value = 15
       }
@@ -330,8 +331,8 @@ const centerMap = () => {
   if (validResults.value.length > 0) {
     const firstResult = validResults.value[0]
     store.center = {
-      lat: typeof firstResult.geometry.location.lat === 'function' ? firstResult.geometry.location.lat() : firstResult.geometry.location.lat,
-      lng: typeof firstResult.geometry.location.lng === 'function' ? firstResult.geometry.location.lng() : firstResult.geometry.location.lng
+      lat: firstResult.location.lat,
+      lng: firstResult.location.lng
     }
     zoom.value = 15
   } else if (store.selectedCityLocation) {
@@ -349,8 +350,8 @@ const fitBounds = () => {
     const bounds = new google.maps.LatLngBounds()
     validResults.value.forEach(result => {
       bounds.extend({
-        lat: typeof result.geometry.location.lat === 'function' ? result.geometry.location.lat() : result.geometry.location.lat,
-        lng: typeof result.geometry.location.lng === 'function' ? result.geometry.location.lng() : result.geometry.location.lng
+        lat: result.location.lat,
+        lng: result.location.lng
       })
     })
     

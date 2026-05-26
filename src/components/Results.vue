@@ -188,12 +188,12 @@ const store = useAppStore()
 const results = computed(() => {
   return store.searchResults.map(result => ({
     name: result.name,
-    phone: result.formatted_phone_number || result.international_phone_number,
+    phone: result.phoneNumber,
     website: result.website,
     rating: result.rating,
-    address: result.formatted_address || result.vicinity,
-    location: result.location, // Usar location en lugar de geometry
-    place_id: result.place_id || result.placeId
+    address: result.address,
+    location: result.location,
+    place_id: result.placeId
   }))
 })
 

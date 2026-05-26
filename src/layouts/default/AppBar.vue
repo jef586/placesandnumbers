@@ -1,11 +1,3 @@
 <template>
-  <v-app-bar flat>
-    <v-app-bar-title>    
-
-    </v-app-bar-title>
-  </v-app-bar>
+  <div></div>
 </template>
-
-<script setup>
-  //
-</script>

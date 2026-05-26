@@ -14,6 +14,9 @@ export const getPlaceDetails = (placeId) => {
           "website",
           "photos",
           "geometry",
+          "rating",
+          "formatted_address",
+          "vicinity",
         ],
       },
       (place, status) => {
@@ -30,6 +33,8 @@ export const getPlaceDetails = (placeId) => {
             name: place.name,
             phoneNumber: place.formatted_phone_number,
             website: place.website,
+            rating: place.rating,
+            address: place.formatted_address || place.vicinity,
             location: {
               lat: typeof place.geometry.location.lat === 'function' ? place.geometry.location.lat() : place.geometry.location.lat,
               lng: typeof place.geometry.location.lng === 'function' ? place.geometry.location.lng() : place.geometry.location.lng,
