@@ -55,6 +55,8 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   Sparkles,
+  Pill,
+  Store,
 } from '@lucide/vue'
 
 defineProps({
@@ -67,6 +69,8 @@ const navItems = [
   { path: '/', label: 'Dashboard', icon: LayoutDashboard, badge: null },
   { path: '/buscar', label: 'Buscar Lugares', icon: Search, badge: null },
   { path: '/prospectos', label: 'Prospectos', icon: Users, badge: null },
+  { path: '/relevamiento-comercial', label: 'Relevamiento Comercial', icon: Store, badge: null },
+  { path: '/relevamiento-farmacias', label: 'Farmacias', icon: Pill, badge: null },
   { path: '/ai-outreach', label: 'AI Outreach', icon: Sparkles, badge: null },
   { path: '/emails', label: 'Emails', icon: Mail, badge: null },
   { path: '/estadisticas', label: 'Estadísticas', icon: BarChart3, badge: null },

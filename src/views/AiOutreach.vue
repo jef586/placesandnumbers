@@ -7,6 +7,20 @@
           Genera mensajes personalizados con IA para tus prospectos
         </p>
       </div>
+      <div class="flex items-center gap-2 bg-gray-100 dark:bg-white/10 rounded-xl p-1">
+        <button
+          v-for="ct in campaignTypes"
+          :key="ct.key"
+          @click="campaignType = ct.key"
+          class="px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200"
+          :class="campaignType === ct.key
+            ? 'bg-white dark:bg-[#1e293b] text-gray-900 dark:text-white shadow-sm border border-gray-200 dark:border-white/10'
+            : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'"
+        >
+          <component :is="ct.icon" class="w-4 h-4 inline-block mr-1.5 -mt-0.5" />
+          {{ ct.label }}
+        </button>
+      </div>
     </div>
 
     <div class="flex flex-col lg:flex-row gap-5 h-[calc(100vh-200px)]">
@@ -237,11 +251,11 @@ import { ref, reactive, computed, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useCrm } from '@/composables/useCrm'
 import { useWhatsApp } from '@/composables/useWhatsApp'
-import { generateMessages, analyzeProspect } from '@/services/ai'
+import { generateMessages, generateCommercialMessages, analyzeProspect } from '@/services/ai'
 import {
   Search, Users, Sparkles, Star, Globe, Lock, Unlock, Clock,
   MessageCircle, Mail, MessageSquare, Loader2, Copy, Check,
-  AlertCircle, Send,
+  AlertCircle, Send, Monitor,
 } from '@lucide/vue'
 
 const route = useRoute()
@@ -255,6 +269,12 @@ const generating = ref(false)
 const generatedResult = ref(null)
 const error = ref('')
 const copiedKey = ref('')
+const campaignType = ref('web')
+
+const campaignTypes = [
+  { key: 'web', label: 'Desarrollo Web', icon: Globe },
+  { key: 'software', label: 'Software de Facturación', icon: Monitor },
+]
 
 const tones = [
   { key: 'casual', label: 'Casual' },
@@ -271,9 +291,17 @@ const analysisResult = computed(() => {
 const prospects = computed(() => (crm.prospects || []).filter(Boolean))
 
 const filteredProspects = computed(() => {
-  if (!searchQuery.value) return prospects.value
+  let list = prospects.value
+
+  if (campaignType.value === 'software') {
+    list = list.filter(p => p.tipo_relevamiento === 'comercial')
+  } else {
+    list = list.filter(p => p.tipo_relevamiento !== 'comercial')
+  }
+
+  if (!searchQuery.value) return list
   const q = searchQuery.value.toLowerCase()
-  return prospects.value.filter(p =>
+  return list.filter(p =>
     p.name?.toLowerCase().includes(q) ||
     p.category?.toLowerCase().includes(q) ||
     p.city?.toLowerCase().includes(q) ||
@@ -367,7 +395,8 @@ async function generate() {
   generatedResult.value = null
 
   try {
-    generatedResult.value = await generateMessages(selectedProspect.value, selectedTone.value)
+    const genFn = campaignType.value === 'software' ? generateCommercialMessages : generateMessages
+    generatedResult.value = await genFn(selectedProspect.value, selectedTone.value)
   } catch (e) {
     error.value = e.message || 'Error inesperado al generar mensajes'
   } finally {
@@ -396,6 +425,12 @@ async function copyMessage(key) {
     /* fallback */
   }
 }
+
+watch(campaignType, () => {
+  selectedProspect.value = null
+  generatedResult.value = null
+  error.value = ''
+})
 
 watch(() => route.query.prospect, (id) => {
   if (id) {

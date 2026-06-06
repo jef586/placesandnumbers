@@ -92,6 +92,13 @@
                   <UserPlus class="w-3.5 h-3.5" />
                   {{ isProspectAdded(result) ? 'Agregado' : 'Prospecto' }}
                 </button>
+                <button
+                  @click.stop="addToComercial(result)"
+                  class="action-btn action-comercial"
+                >
+                  <Store class="w-3.5 h-3.5" />
+                  + Comercial
+                </button>
               </div>
 
             </div>
@@ -144,10 +151,11 @@ import { useAppStore } from '@/store/app'
 import { useWhatsApp } from '@/composables/useWhatsApp'
 import {
   List, MapPin, Building2, Star, Phone, Globe,
-  ExternalLink, MessageCircle, UserPlus, X, Mail,
+  ExternalLink, MessageCircle, UserPlus, X, Mail, Store,
 } from '@lucide/vue'
 
 import { useCrm } from '@/composables/useCrm'
+import { useCommercialSurvey } from '@/composables/useCommercialSurvey'
 
 const store = useAppStore()
 const crm = useCrm()
@@ -157,17 +165,45 @@ const results = computed(() => store.searchResults)
 const businessTypeLabel = computed(() => {
   const type = store.currentSearchParams.type
   const labels = {
-    lodging: 'Hotel/Alojamiento',
+    hotel: 'Hotel',
     hostel: 'Hostel',
-    cabin: 'Cabañas',
-    apartment: 'Apart Hotel',
-    campground: 'Camping',
-    restaurant: 'Restaurante',
-    cafe: 'Café',
+    'caba\u00f1as': 'Caba\u00f1as',
+    'apart-hotel': 'Apart Hotel',
+    camping: 'Camping',
+    alojamiento: 'Alojamiento',
+    restaurante: 'Restaurante',
+    cafe: 'Caf\u00e9',
     bar: 'Bar',
     pharmacy: 'Farmacia',
+    supermercado: 'Supermercado',
+    mercado: 'Mercado',
+    autoservicio: 'Autoservicio',
+    almacen: 'Almac\u00e9n',
+    kiosco: 'Kiosco',
+    ferreteria: 'Ferreter\u00eda',
+    corralon: 'Corral\u00f3n',
+    distribuidora: 'Distribuidora',
+    veterinaria: 'Veterinaria',
+    libreria: 'Librer\u00eda',
+    repuestos: 'Casa de repuestos',
+    electricidad: 'Casa de electricidad',
+    pintureria: 'Pinturer\u00eda',
+    computacion: 'Casa de computaci\u00f3n',
+    electronica: 'Electr\u00f3nica',
+    bazar: 'Bazar',
+    dietetica: 'Diet\u00e9tica',
+    perfumeria: 'Perfumer\u00eda',
+    'pet-shop': 'Pet Shop',
+    jugueteria: 'Jugueter\u00eda',
+    indumentaria: 'Indumentaria',
+    zapateria: 'Zapater\u00eda',
+    cotillon: 'Cotill\u00f3n',
+    regaleria: 'Regaler\u00eda',
+    muebleria: 'Muebler\u00eda',
+    colchoneria: 'Colchoner\u00eda',
+    bicicleteria: 'Bicicleter\u00eda',
   }
-  return labels[type] || 'Alojamiento'
+  return labels[type] || type || 'Alojamiento'
 })
 
 const selectResult = (result) => {
@@ -230,6 +266,20 @@ const { openWhatsApp } = useWhatsApp()
 
 function openWhatsAppWithCategory(result) {
   openWhatsApp({ ...result, category: businessTypeLabel.value })
+}
+
+const addToComercial = async (result) => {
+  const comercial = useCommercialSurvey()
+  await comercial.addProspect({
+    placeId: result.placeId,
+    name: result.name,
+    address: result.address,
+    phone: result.phoneNumber,
+    website: result.website,
+    rating: result.rating,
+    city: store.currentSearchParams.city,
+    googleMapsUrl: `https://maps.google.com/?q=place_id:${result.placeId}`,
+  })
 }
 </script>
 
@@ -340,6 +390,11 @@ function openWhatsAppWithCategory(result) {
   @apply bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400;
   @apply hover:bg-blue-100 dark:hover:bg-blue-500/20;
   @apply disabled:opacity-50 disabled:cursor-not-allowed;
+}
+
+.action-comercial {
+  @apply bg-violet-50 dark:bg-violet-500/10 text-violet-600 dark:text-violet-400;
+  @apply hover:bg-violet-100 dark:hover:bg-violet-500/20;
 }
 
 .modal-overlay {

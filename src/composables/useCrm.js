@@ -48,14 +48,19 @@ function startStoreSync() {
   if (storeSyncSetup) return
   try {
     const store = useAppStore()
+    const filtered = (prospects) =>
+      (prospects || []).filter(p => p && p.tipo_relevamiento !== 'comercial')
     if (store.prospects && store.prospects.length > 0 && localProspects.value.length === 0) {
-      localProspects.value = store.prospects
+      localProspects.value = filtered(store.prospects)
     }
     watch(
       () => store.prospects,
       (val) => {
-        if (val && val.length > 0 && JSON.stringify(val) !== JSON.stringify(localProspects.value)) {
-          localProspects.value = val
+        if (val && val.length > 0) {
+          const f = filtered(val)
+          if (JSON.stringify(f) !== JSON.stringify(localProspects.value)) {
+            localProspects.value = f
+          }
         }
       },
       { deep: true }
@@ -100,6 +105,11 @@ export function useCrm() {
   const searchQuery = ref('')
   const statusFilter = ref('')
   const showOverdueOnly = ref(false)
+  const provinciaFilter = ref('')
+  const ciudadFilter = ref('')
+  const nivelInteresFilter = ref('')
+  const sistemaActualFilter = ref('')
+  const estadoComercialFilter = ref('')
 
   const prospects = computed({
     get: () => localProspects.value,
@@ -147,6 +157,118 @@ export function useCrm() {
     return list
   })
 
+  function isPharmacy(p) {
+    if (!p || typeof p !== 'object') return false
+    const cat = (p.category || '').toLowerCase()
+    return cat.includes('farmacia') || cat.includes('pharmacy')
+  }
+
+  const pharmacyProspects = computed(() =>
+    (localProspects.value || []).filter(p => p && typeof p === 'object' && isPharmacy(p))
+  )
+
+  const filteredPharmacyProspects = computed(() => {
+    let list = pharmacyProspects.value
+    if (statusFilter.value) {
+      list = list.filter(p => p.status === statusFilter.value)
+    }
+    if (searchQuery.value) {
+      const q = searchQuery.value.toLowerCase()
+      list = list.filter(p =>
+        p.name?.toLowerCase().includes(q) ||
+        p.phone?.includes(q) ||
+        p.address?.toLowerCase().includes(q) ||
+        p.email?.toLowerCase().includes(q) ||
+        p.sistemaActual?.toLowerCase().includes(q)
+      )
+    }
+    if (provinciaFilter.value) {
+      list = list.filter(p => p.provincia === provinciaFilter.value)
+    }
+    if (ciudadFilter.value) {
+      list = list.filter(p => p.city === ciudadFilter.value || detectCity(p.address) === ciudadFilter.value)
+    }
+    if (nivelInteresFilter.value) {
+      list = list.filter(p => p.nivelInteres === nivelInteresFilter.value)
+    }
+    if (sistemaActualFilter.value) {
+      list = list.filter(p => p.sistemaActual === sistemaActualFilter.value)
+    }
+    if (estadoComercialFilter.value) {
+      list = list.filter(p => p.estadoComercial === estadoComercialFilter.value)
+    }
+    return list
+  })
+
+  const uniqueProvincias = computed(() => {
+    const provincias = new Set()
+    for (const p of pharmacyProspects.value) {
+      if (p.provincia) provincias.add(p.provincia)
+    }
+    return [...provincias].sort((a, b) => a.localeCompare(b, 'es'))
+  })
+
+  const uniqueCiudades = computed(() => {
+    const ciudades = new Set()
+    const prov = provinciaFilter.value
+    for (const p of pharmacyProspects.value) {
+      if (prov && p.provincia !== prov) continue
+      const city = p.city || detectCity(p.address)
+      if (city && city !== 'Sin ciudad') ciudades.add(city)
+    }
+    return [...ciudades].sort((a, b) => a.localeCompare(b, 'es'))
+  })
+
+  const uniqueSistemasActuales = computed(() => {
+    const sistemas = new Set()
+    for (const p of pharmacyProspects.value) {
+      if (p.sistemaActual) sistemas.add(p.sistemaActual)
+    }
+    return [...sistemas].sort()
+  })
+
+  const pharmacyProspectsByProvincia = computed(() => {
+    const groups = {}
+    const filtered = filteredPharmacyProspects.value
+    for (const p of filtered) {
+      const prov = p.provincia || 'Sin provincia'
+      if (!groups[prov]) groups[prov] = {}
+      const city = p.city || detectCity(p.address) || 'Sin ciudad'
+      if (!groups[prov][city]) groups[prov][city] = []
+      groups[prov][city].push(p)
+    }
+    const sorted = Object.keys(groups).sort((a, b) => a.localeCompare(b, 'es'))
+    return sorted.map(prov => ({
+      provincia: prov,
+      ciudades: Object.keys(groups[prov])
+        .sort((a, b) => a.localeCompare(b, 'es'))
+        .map(city => ({ ciudad: city, prospects: groups[prov][city] }))
+    }))
+  })
+
+  const pharmacyStats = computed(() => {
+    const safe = pharmacyProspects.value
+    const total = safe.length
+    const contactadas = safe.filter(p => p.estadoComercial === 'contactado' || p.estadoComercial === 'interesado' || p.estadoComercial === 'no_interesado' || p.estadoComercial === 'visita_agendada' || p.estadoComercial === 'cliente').length
+    const interesadas = safe.filter(p => p.nivelInteres === 'alto' || p.nivelInteres === 'medio').length
+    const sinContactar = safe.filter(p => p.estadoComercial === 'sin_contactar' || !p.estadoComercial).length
+    const conPrecio = safe.filter(p => p.precioMensualActual && p.precioMensualActual > 0)
+    const precioPromedio = conPrecio.length > 0
+      ? conPrecio.reduce((s, p) => s + Number(p.precioMensualActual), 0) / conPrecio.length
+      : 0
+    const sistemaCount = {}
+    for (const p of safe) {
+      if (p.sistemaActual) {
+        sistemaCount[p.sistemaActual] = (sistemaCount[p.sistemaActual] || 0) + 1
+      }
+    }
+    const sistemasMasUsados = Object.entries(sistemaCount)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 3)
+      .map(([sistema, count]) => ({ sistema, count }))
+    return { total, contactadas, interesadas, sinContactar, precioPromedio, sistemasMasUsados }
+  })
+
   const prospectsByCity = computed(() => {
     const groups = {}
     const filtered = filteredProspects.value
@@ -173,11 +295,24 @@ export function useCrm() {
       rating: data.rating || null,
       city: data.city || '',
       origin: data.origin || 'Google Maps',
-      status: 'new',
+      status: data.status || 'new',
       notes: data.notes || '',
       contact_made: false,
       last_contact: data.last_contact || null,
       next_contact: data.next_contact || null,
+      provincia: data.provincia || '',
+      whatsapp: data.whatsapp || '',
+      instagram: data.instagram || '',
+      googleMapsUrl: data.googleMapsUrl || data.google_maps_url || '',
+      sistemaActual: data.sistemaActual || data.sistema_actual || '',
+      precioMensualActual: data.precioMensualActual || data.precio_mensual_actual || null,
+      cantidadSucursales: data.cantidadSucursales || data.cantidad_sucursales || 1,
+      cantidadPuestos: data.cantidadPuestos || data.cantidad_puestos || 1,
+      nivelInteres: data.nivelInteres || data.nivel_interes || 'bajo',
+      estadoComercial: data.estadoComercial || data.estado_comercial || 'sin_contactar',
+      problemasDetectados: data.problemasDetectados || data.problemas_detectados || '',
+      observaciones: data.observaciones || '',
+      precioEstimadoRecomendado: data.precioEstimadoRecomendado || data.precio_estimado_recomendado || null,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     }
@@ -202,11 +337,24 @@ export function useCrm() {
         rating: prospect.rating,
         city: prospect.city,
         origin: prospect.origin,
-        status: 'new',
-        notes: '',
+        status: prospect.status,
+        notes: prospect.notes,
         contact_made: false,
-        last_contact: null,
-        next_contact: null,
+        last_contact: prospect.last_contact,
+        next_contact: prospect.next_contact,
+        provincia: prospect.provincia || null,
+        whatsapp: prospect.whatsapp || null,
+        instagram: prospect.instagram || null,
+        google_maps_url: prospect.googleMapsUrl || null,
+        sistema_actual: prospect.sistemaActual || null,
+        precio_mensual_actual: prospect.precioMensualActual,
+        cantidad_sucursales: prospect.cantidadSucursales,
+        cantidad_puestos: prospect.cantidadPuestos,
+        nivel_interes: prospect.nivelInteres,
+        estado_comercial: prospect.estadoComercial,
+        problemas_detectados: prospect.problemasDetectados,
+        observaciones: prospect.observaciones,
+        precio_estimado_recomendado: prospect.precioEstimadoRecomendado,
       }]).select().single()
       if (!error) {
         const idx = localProspects.value.findIndex(p => p.id === prospect.id)
@@ -295,9 +443,20 @@ export function useCrm() {
     searchQuery,
     statusFilter,
     showOverdueOnly,
+    provinciaFilter,
+    ciudadFilter,
+    nivelInteresFilter,
+    sistemaActualFilter,
+    estadoComercialFilter,
     statsByStatus,
     overdueProspects,
     filteredProspects,
+    filteredPharmacyProspects,
+    uniqueProvincias,
+    uniqueCiudades,
+    uniqueSistemasActuales,
+    pharmacyProspectsByProvincia,
+    pharmacyStats,
     prospectsByCity,
     addProspect,
     updateProspect,

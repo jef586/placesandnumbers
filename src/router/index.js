@@ -27,6 +27,16 @@ const routes = [
         component: () => import('@/views/Prospectos.vue'),
       },
       {
+        path: 'relevamiento-farmacias',
+        name: 'RelevamientoFarmacias',
+        component: () => import('@/views/RelevamientoFarmacias.vue'),
+      },
+      {
+        path: 'relevamiento-comercial',
+        name: 'RelevamientoComercial',
+        component: () => import('@/views/RelevamientoComercial.vue'),
+      },
+      {
         path: 'emails',
         name: 'Emails',
         component: () => import('@/views/Emails.vue'),

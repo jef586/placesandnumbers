@@ -52,7 +52,7 @@ export const getPlaceDetails = (placeId) => {
   });
 };
 
-export const initSearch = async (city, business, callback, location) => {
+export const initSearch = async (city, business, callback, location, googleType) => {
   const service = new google.maps.places.PlacesService(
     document.createElement("div")
   );
@@ -81,6 +81,10 @@ export const initSearch = async (city, business, callback, location) => {
       keyword: business,
       maxResultCount: 30,
     };
+
+    if (googleType) {
+      request.type = googleType;
+    }
 
     console.log(request);
     service.nearbySearch(request, async (results, status) => {

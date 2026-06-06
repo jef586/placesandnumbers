@@ -56,6 +56,10 @@
                   <UserPlus class="w-3.5 h-3.5" />
                   Agregar a prospectos
                 </button>
+                <button @click="addToComercial(result)" class="info-btn info-btn-comercial mt-1">
+                  <Store class="w-3.5 h-3.5" />
+                  Agregar a Relevamiento Comercial
+                </button>
               </div>
             </div>
           </InfoWindow>
@@ -100,8 +104,9 @@ import { GoogleMap, Marker, InfoWindow } from 'vue3-google-map'
 import { useAppStore } from '@/store/app'
 import {
   Map, MapPin, Building2, Phone, Globe, Star,
-  UserPlus, Crosshair, Maximize2, Plus, Minus, Satellite,
+  UserPlus, Crosshair, Maximize2, Plus, Minus, Satellite, Store,
 } from '@lucide/vue'
+import { useCommercialSurvey } from '@/composables/useCommercialSurvey'
 
 const store = useAppStore()
 const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY
@@ -198,6 +203,20 @@ const addToProspects = (result) => {
     website: result.website,
     rating: result.rating,
     city: store.currentSearchParams.city,
+  })
+}
+
+const addToComercial = async (result) => {
+  const comercial = useCommercialSurvey()
+  await comercial.addProspect({
+    placeId: result.placeId,
+    name: result.name,
+    address: result.address,
+    phone: result.phoneNumber,
+    website: result.website,
+    rating: result.rating,
+    city: store.currentSearchParams.city,
+    googleMapsUrl: `https://maps.google.com/?q=place_id:${result.placeId}`,
   })
 }
 </script>
@@ -310,6 +329,10 @@ const addToProspects = (result) => {
   @apply w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-xs font-medium;
   @apply bg-blue-50 text-blue-600 hover:bg-blue-100;
   @apply transition-all duration-200;
+}
+
+.info-btn-comercial {
+  @apply bg-violet-50 text-violet-600 hover:bg-violet-100;
 }
 
 /* Dark mode overrides for info window */

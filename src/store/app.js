@@ -8,7 +8,7 @@ export const useAppStore = defineStore('app', {
     selectedCityLocation: { lat: -31.537297012068002, lng: -68.52507581988237 },
     center: { lat: -31.537297012068002, lng: -68.52507581988237 },
     selectedLocationName: '',
-    currentSearchParams: { city: '', type: '' },
+    currentSearchParams: { city: '', type: '', categoryGroup: '' },
     prospects: [],
     dbReady: false,
   }),

@@ -1,3 +1,35 @@
+const RUBRO_KEYWORDS = {
+  ferretería: ['ferretería', 'ferreteria', 'ferretero'],
+  mercado: ['mercado', 'autoservicio', 'supermercado', 'supermercado', 'almacén', 'almacen', 'kiosco'],
+  corralón: ['corralón', 'corralon', 'materiales', 'construcción'],
+  distribuidora: ['distribuidora', 'distribucion', 'distribución', 'mayorista'],
+  veterinaria: ['veterinaria', 'veterinario', 'pet shop', 'mascotas'],
+  librería: ['librería', 'libreria', 'papelería', 'papeleria', 'libros'],
+}
+
+function detectRubroCategory(prospect) {
+  const rubro = (prospect?.rubro || '').toLowerCase()
+  const category = (prospect?.category || '').toLowerCase()
+  const name = (prospect?.name || '').toLowerCase()
+  const haystack = `${rubro} ${category} ${name}`
+  for (const [cat, keywords] of Object.entries(RUBRO_KEYWORDS)) {
+    if (keywords.some(k => haystack.includes(k))) return cat
+  }
+  return null
+}
+
+function buildRubroMention(rubroCategory) {
+  const mentions = {
+    ferretería: 'control de stock y gestión de artículos. Un sistema que les permita saber exactamente qué tienen en depósito, automatizar pedidos y llevar un control preciso de precios y proveedores.',
+    mercado: 'facturación rápida, control de stock y gestión de ventas. Un sistema que agilice las cobranzas, evite faltantes y les dé visibilidad en tiempo real de todo el negocio.',
+    corralón: 'control de inventario y cuentas corrientes. Un sistema que ordene el depósito, gestione los pedidos a proveedores y permita manejar las cuentas corrientes de sus clientes de forma sencilla.',
+    distribuidora: 'gestión de clientes, control de stock y facturación electrónica. Un sistema que centralice los pedidos, automatice la facturación y les dé trazabilidad completa de las entregas.',
+    veterinaria: 'control de stock de productos, gestión de turnos y administración comercial. Un sistema que integre la venta de productos con la gestión de pacientes y servicios.',
+    librería: 'control de inventario y gestión de ventas. Un sistema que ordene el stock de libros y artículos de librería, agilice las ventas y evite pérdidas por falta de control.',
+  }
+  return mentions[rubroCategory] || 'facturación electrónica, control de stock y gestión de ventas. Un sistema que centralice toda la operación diaria del negocio en un solo lugar.'
+}
+
 export function useWhatsApp() {
   const MISSING_PHONE_MESSAGE = 'Este prospecto no tiene número de teléfono disponible.'
   const SOCIAL_HOSTS = [
@@ -48,6 +80,36 @@ Quedo atento. ¡Muchas gracias!`
       return `${greeting} Vi su página web y me pareció interesante su negocio. Mi nombre es Ezequiel Flores ,soy desarrollador web y creo que podría ayudarlos a mejorar su sitio para que se vea más moderno, cargue más rápido y convierta mejor las visitas en consultas por WhatsApp. Si les interesa, podemos coordinar una reunión breve y les comparto algunas ideas concretas para mejorarlo. Conocé más en https://tikas.com.ar/`
     }
     return `${greeting} Vi su negocio en Google Maps y noté que todavía no tienen una página web visible. Mi nombre es Ezequiel Flores ,soy desarrollador web y puedo ayudarlos a crear un sitio profesional para mostrar sus servicios, fotos, ubicación, horarios y recibir más consultas por WhatsApp. ¿Les gustaría que les comparta una propuesta simple? Conocé más en https://tikas.com.ar/`
+  }
+
+  function buildCommercialWhatsAppMessage(prospect) {
+    const name = prospect?.name?.trim()
+    const city = prospect?.city?.trim() || 'la zona'
+    const rubroCategory = detectRubroCategory(prospect)
+    const rubroMention = buildRubroMention(rubroCategory)
+    const tieneSistema = prospect?.software_actual && prospect.software_actual.trim()
+
+    const greeting = name
+      ? `Hola ${name}, ¿cómo está?`
+      : 'Hola, ¿cómo está?'
+
+    const base = `${greeting}
+
+Mi nombre es Ezequiel Flores y estoy realizando un relevamiento comercial en ${city}.
+
+Vi su negocio y quería comentarle que estamos ayudando a comercios a simplificar la gestión diaria mediante un sistema de facturación, control de stock y administración de ventas.
+
+Específicamente para su rubro, ofrecemos ${rubroMention}
+
+${tieneSistema
+  ? `Veo que actualmente utiliza ${prospect.software_actual}. Nuestro sistema se integra fácilmente y le permitiría optimizar procesos sin complicaciones.`
+  : 'Nuestro sistema es intuitivo y se adapta a las necesidades de cada comercio, sin importar si están arrancando o vienen trabajando con métodos manuales.'}
+
+Me gustaría coordinar una breve demostración para mostrarle cómo funciona y evaluar si puede ser útil para su negocio.
+
+Quedo atento. Muchas gracias.`
+
+    return base
   }
 
   function getPhone(place) {
@@ -241,6 +303,7 @@ Quedo atento. ¡Muchas gracias!`
 
   return {
     buildWhatsAppMessage,
+    buildCommercialWhatsAppMessage,
     createWhatsAppUrl,
     createWhatsAppTargets,
     copyWhatsAppMessage,
