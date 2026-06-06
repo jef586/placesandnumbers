@@ -46,6 +46,18 @@ CREATE POLICY "Users can manage their own search history"
   USING (auth.uid() = user_id)
   WITH CHECK (auth.uid() = user_id);
 
+-- ============================================================
+-- MIGRATION: Add CRM fields (run after initial schema)
+-- ============================================================
+ALTER TABLE prospects ADD COLUMN IF NOT EXISTS email TEXT DEFAULT '';
+ALTER TABLE prospects ADD COLUMN IF NOT EXISTS next_contact TIMESTAMPTZ;
+ALTER TABLE prospects ADD COLUMN IF NOT EXISTS origin TEXT DEFAULT 'Google Maps';
+
+-- Update status constraint to include new CRM statuses
+ALTER TABLE prospects DROP CONSTRAINT IF EXISTS prospects_status_check;
+ALTER TABLE prospects ADD CONSTRAINT prospects_status_check
+  CHECK (status IN ('new', 'contacted', 'replied', 'interested', 'not_interested', 'client'));
+
 -- Auto-update updated_at
 CREATE OR REPLACE FUNCTION update_updated_at()
 RETURNS TRIGGER AS $$

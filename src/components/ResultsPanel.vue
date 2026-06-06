@@ -78,14 +78,14 @@
                   Web
                 </a>
                 <button
-                  @click.stop="openWhatsApp(result)"
+                  @click.stop="openWhatsAppWithCategory(result)"
                   class="action-btn secondary"
                 >
                   <MessageCircle class="w-3.5 h-3.5" />
-                  WhatsApp
+                  Abrir WA
                 </button>
                 <button
-                  @click.stop="addToProspects(result)"
+                  @click.stop="openAddProspectModal(result)"
                   class="action-btn primary"
                   :disabled="isProspectAdded(result)"
                 >
@@ -93,24 +93,64 @@
                   {{ isProspectAdded(result) ? 'Agregado' : 'Prospecto' }}
                 </button>
               </div>
+
             </div>
           </div>
         </div>
       </div>
     </div>
   </div>
+
+  <Teleport to="body">
+    <div v-if="showEmailModal" class="modal-overlay" @click.self="cancelAddProspect">
+      <div class="modal-content max-w-sm">
+        <div class="modal-header">
+          <div class="flex items-center gap-2">
+            <Mail class="w-5 h-5 text-blue-500" />
+            <h3 class="modal-title">Email del negocio</h3>
+          </div>
+          <button @click="cancelAddProspect" class="modal-close">
+            <X class="w-5 h-5" />
+          </button>
+        </div>
+        <div class="modal-body">
+          <p class="text-sm text-gray-600 dark:text-gray-400 mb-3">
+            Ingresa el email de <strong>{{ pendingResult?.name }}</strong> (opcional):
+          </p>
+          <input
+            v-model="emailInput"
+            type="email"
+            placeholder="correo@ejemplo.com"
+            class="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-[#1a1f2e] text-sm text-gray-900 dark:text-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 transition-all"
+            @keydown.enter="confirmAddProspect"
+          />
+        </div>
+        <div class="modal-footer flex gap-2">
+          <button @click="cancelAddProspect" class="flex-1 py-2.5 rounded-xl text-sm font-medium bg-gray-100 dark:bg-white/5 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-white/10 transition-colors">
+            Cancelar
+          </button>
+          <button @click="confirmAddProspect" class="flex-1 py-2.5 rounded-xl text-sm font-medium bg-blue-500 text-white hover:bg-blue-600 transition-colors">
+            Guardar
+          </button>
+        </div>
+      </div>
+    </div>
+  </Teleport>
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useAppStore } from '@/store/app'
 import { useWhatsApp } from '@/composables/useWhatsApp'
 import {
   List, MapPin, Building2, Star, Phone, Globe,
-  ExternalLink, MessageCircle, UserPlus,
+  ExternalLink, MessageCircle, UserPlus, X, Mail,
 } from '@lucide/vue'
 
+import { useCrm } from '@/composables/useCrm'
+
 const store = useAppStore()
+const crm = useCrm()
 
 const results = computed(() => store.searchResults)
 
@@ -125,6 +165,7 @@ const businessTypeLabel = computed(() => {
     restaurant: 'Restaurante',
     cafe: 'Café',
     bar: 'Bar',
+    pharmacy: 'Farmacia',
   }
   return labels[type] || 'Alojamiento'
 })
@@ -140,23 +181,56 @@ const selectResult = (result) => {
 }
 
 const isProspectAdded = (result) => {
-  return store.prospects.some(p => p.placeId === result.placeId)
+  return (crm.prospects.value || []).some(p => p && p.place_id === result.placeId)
 }
 
-const addToProspects = (result) => {
-  store.addProspect({
+const showEmailModal = ref(false)
+const pendingResult = ref(null)
+const emailInput = ref('')
+
+const openAddProspectModal = (result) => {
+  if (result.email) {
+    addProspectWithEmail(result, result.email)
+    return
+  }
+  pendingResult.value = result
+  emailInput.value = ''
+  showEmailModal.value = true
+}
+
+const confirmAddProspect = async () => {
+  if (!pendingResult.value) return
+  await addProspectWithEmail(pendingResult.value, emailInput.value)
+  showEmailModal.value = false
+  pendingResult.value = null
+}
+
+const cancelAddProspect = () => {
+  showEmailModal.value = false
+  pendingResult.value = null
+  emailInput.value = ''
+}
+
+const addProspectWithEmail = async (result, email) => {
+  await crm.addProspect({
     placeId: result.placeId,
     name: result.name,
     category: businessTypeLabel.value,
     address: result.address,
     phone: result.phoneNumber,
+    email: email || '',
     website: result.website,
     rating: result.rating,
     city: store.currentSearchParams.city,
+    origin: 'Google Maps',
   })
 }
 
 const { openWhatsApp } = useWhatsApp()
+
+function openWhatsAppWithCategory(result) {
+  openWhatsApp({ ...result, category: businessTypeLabel.value })
+}
 </script>
 
 <style scoped>
@@ -267,4 +341,41 @@ const { openWhatsApp } = useWhatsApp()
   @apply hover:bg-blue-100 dark:hover:bg-blue-500/20;
   @apply disabled:opacity-50 disabled:cursor-not-allowed;
 }
+
+.modal-overlay {
+  @apply fixed inset-0 z-[100] flex items-center justify-center p-4;
+  @apply bg-black/40 backdrop-blur-sm;
+}
+
+.modal-content {
+  @apply bg-white dark:bg-[#111827];
+  @apply rounded-2xl shadow-2xl;
+  @apply border border-gray-200 dark:border-white/10;
+  @apply w-full animate-scale-in;
+}
+
+.modal-header {
+  @apply flex items-center justify-between px-6 py-4;
+  @apply border-b border-gray-100 dark:border-white/5;
+}
+
+.modal-title {
+  @apply text-base font-semibold text-gray-900 dark:text-white;
+}
+
+.modal-close {
+  @apply p-1 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-200;
+  @apply hover:bg-gray-100 dark:hover:bg-white/10;
+  @apply transition-colors;
+}
+
+.modal-body {
+  @apply p-6;
+}
+
+.modal-footer {
+  @apply px-6 py-4;
+  @apply border-t border-gray-100 dark:border-white/5;
+}
+
 </style>

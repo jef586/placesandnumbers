@@ -92,6 +92,7 @@ const options = [
   { label: 'Restaurante', value: 'restaurant' },
   { label: 'Café', value: 'cafe' },
   { label: 'Bar', value: 'bar' },
+  { label: 'Farmacia', value: 'pharmacy' },
 ]
 
 const messageClass = computed(() => ({

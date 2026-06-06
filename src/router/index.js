@@ -37,6 +37,11 @@ const routes = [
         component: () => import('@/views/Estadisticas.vue'),
       },
       {
+        path: 'ai-outreach',
+        name: 'AiOutreach',
+        component: () => import('@/views/AiOutreach.vue'),
+      },
+      {
         path: 'configuracion',
         name: 'Configuracion',
         component: () => import('@/views/Configuracion.vue'),

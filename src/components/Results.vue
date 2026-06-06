@@ -86,14 +86,14 @@
             </div>
             <div class="d-flex gap-1">
               <v-btn
-                @click="openWhatsApp(item)"
+                @click="openWhatsAppWithCategory(item)"
                 size="x-small"
                 color="success"
                 variant="tonal"
                 class="phone-btn"
               >
                 <v-icon size="small">mdi-whatsapp</v-icon>
-                WhatsApp
+                Abrir WA
               </v-btn>
               <v-btn
                 v-if="item.phone"
@@ -185,6 +185,26 @@ import { useWhatsApp } from '@/composables/useWhatsApp'
 
 const store = useAppStore()
 const { openWhatsApp } = useWhatsApp()
+
+const businessTypeLabel = computed(() => {
+  const type = store.currentSearchParams.type
+  const labels = {
+    lodging: 'Hotel/Alojamiento',
+    hostel: 'Hostel',
+    cabin: 'Cabañas',
+    apartment: 'Apart Hotel',
+    campground: 'Camping',
+    restaurant: 'Restaurante',
+    cafe: 'Café',
+    bar: 'Bar',
+    pharmacy: 'Farmacia',
+  }
+  return labels[type] || 'Alojamiento'
+})
+
+function openWhatsAppWithCategory(item) {
+  openWhatsApp({ ...item, category: businessTypeLabel.value })
+}
 
 const results = computed(() => {
   return store.searchResults.map(result => ({
