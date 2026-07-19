@@ -177,7 +177,7 @@
 
                   <div class="relative">
                     <button
-                      @click="toggleStatusMenu($event, prospect.id)"
+                      @click="toggleStatusMenu($event, prospect.id || prospect.place_id)"
                       class="status-btn"
                     >
                       <span>{{ statusLabels[prospect.status] || prospect.status }}</span>
@@ -185,14 +185,14 @@
                     </button>
                     <Teleport to="body">
                       <div
-                        v-if="openMenuId === prospect.id"
+                        v-if="openMenuId === (prospect.id || prospect.place_id)"
                         class="status-dropdown"
                         :style="menuStyle"
                       >
                         <button
                           v-for="s in statusList"
                           :key="s.key"
-                          @click="selectStatus(prospect.id, s.key)"
+                          @click="selectStatus(prospect.id || prospect.place_id, s.key)"
                           class="status-option"
                           :class="{ selected: prospect.status === s.key }"
                         >
@@ -281,7 +281,7 @@
             />
             <div class="flex gap-2 mt-3">
               <button
-                @click="crm.scheduleFollowUp(editingProspect.id, null); showScheduleDialog = false"
+                @click="crm.scheduleFollowUp(editingProspectId, null); showScheduleDialog = false"
                 class="flex-1 py-2.5 rounded-xl text-sm font-medium bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-white/20 transition-colors"
               >
                 Quitar fecha
@@ -337,6 +337,7 @@ const generatingFor = ref(null)
 const showNotesDialog = ref(false)
 const showScheduleDialog = ref(false)
 const editingProspect = ref(null)
+const editingProspectId = ref(null)
 const noteText = ref('')
 const scheduleDate = ref('')
 
@@ -365,11 +366,24 @@ function toggleStatusMenu(e, id) {
     return
   }
   const rect = e.currentTarget.getBoundingClientRect()
-  menuStyle.value = {
-    position: 'fixed',
-    top: `${rect.bottom + 4}px`,
-    left: `${rect.left}px`,
-    width: `${Math.max(rect.width, 150)}px`,
+  const estimatedHeight = statusList.length * 36 + 12
+  const spaceBelow = window.innerHeight - rect.bottom
+  if (spaceBelow < estimatedHeight) {
+    menuStyle.value = {
+      position: 'fixed',
+      top: `${Math.max(4, rect.top - estimatedHeight - 4)}px`,
+      left: `${rect.left}px`,
+      width: `${Math.max(rect.width, 150)}px`,
+      marginTop: '0',
+    }
+  } else {
+    menuStyle.value = {
+      position: 'fixed',
+      top: `${rect.bottom + 4}px`,
+      left: `${rect.left}px`,
+      width: `${Math.max(rect.width, 150)}px`,
+      marginTop: '0',
+    }
   }
   openMenuId.value = id
 }
@@ -426,18 +440,20 @@ function formatDate(dateStr) {
 
 function openNotes(prospect) {
   editingProspect.value = prospect
+  editingProspectId.value = prospect.id || prospect.place_id
   noteText.value = ''
   showNotesDialog.value = true
 }
 
 function saveNote() {
-  if (!noteText.value.trim() || !editingProspect.value) return
-  crm.addNote(editingProspect.value.id, noteText.value.trim())
+  if (!noteText.value.trim() || !editingProspectId.value) return
+  crm.addNote(editingProspectId.value, noteText.value.trim())
   noteText.value = ''
 }
 
 function openSchedule(prospect) {
   editingProspect.value = prospect
+  editingProspectId.value = prospect.id || prospect.place_id
   if (prospect.next_contact) {
     const d = new Date(prospect.next_contact)
     const offset = d.getTimezoneOffset()
@@ -450,8 +466,8 @@ function openSchedule(prospect) {
 }
 
 function saveSchedule() {
-  if (!editingProspect.value || !scheduleDate.value) return
-  crm.scheduleFollowUp(editingProspect.value.id, new Date(scheduleDate.value).toISOString())
+  if (!editingProspectId.value || !scheduleDate.value) return
+  crm.scheduleFollowUp(editingProspectId.value, new Date(scheduleDate.value).toISOString())
   showScheduleDialog.value = false
 }
 

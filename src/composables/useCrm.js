@@ -365,6 +365,7 @@ export function useCrm() {
   }
 
   async function updateProspect(id, updates) {
+    if (id == null) return false
     const idx = localProspects.value.findIndex(p => p.id === id || p.place_id === id)
     if (idx === -1) return false
     localProspects.value[idx] = {
@@ -376,12 +377,18 @@ export function useCrm() {
 
     const store = useAppStore()
     if (store.userId) {
-      await supabase.from('prospects').update(updates).eq('id', localProspects.value[idx].id)
+      const p = localProspects.value[idx]
+      if (p.id) {
+        await supabase.from('prospects').update(updates).eq('id', p.id)
+      } else if (p.place_id) {
+        await supabase.from('prospects').update(updates).eq('place_id', p.place_id)
+      }
     }
     return true
   }
 
   async function removeProspect(id) {
+    if (id == null) return
     localProspects.value = localProspects.value.filter(p => p.id !== id && p.place_id !== id)
     syncToStore()
 
@@ -396,6 +403,7 @@ export function useCrm() {
   }
 
   function addNote(id, note) {
+    if (id == null) return
     const idx = localProspects.value.findIndex(p => p.id === id || p.place_id === id)
     if (idx === -1) return
     const existing = localProspects.value[idx].notes || ''
@@ -413,6 +421,7 @@ export function useCrm() {
   }
 
   function scheduleFollowUp(id, date) {
+    if (id == null) return
     const idx = localProspects.value.findIndex(p => p.id === id || p.place_id === id)
     if (idx === -1) return
     localProspects.value[idx].next_contact = date
@@ -425,6 +434,7 @@ export function useCrm() {
   }
 
   function setLastContact(id) {
+    if (id == null) return
     const now = new Date().toISOString()
     const idx = localProspects.value.findIndex(p => p.id === id || p.place_id === id)
     if (idx === -1) return

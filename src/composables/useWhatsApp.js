@@ -63,13 +63,15 @@ export function useWhatsApp() {
       const greeting = name
         ? `Hola ${name}, ¿cómo está?`
         : 'Hola, ¿cómo está?'
-      return `${greeting} Soy Ezequiel Flores, representante comercial de Alfabeta en La Rioja.
+      return `${greeting}
 
-Estamos ayudando a farmacias de la zona a modernizar su gestión con nuestro software especializado para farmacias, incluyendo facturación, stock y obras sociales.
+Mi nombre es Ezequiel Flores y soy representante comercial de Alfabeta para La Rioja, Catamarca y Tucumán.
 
-¿Le interesaría que coordinemos una breve demostración de 15 minutos para mostrarle cómo funciona?
+Actualmente estamos realizando un relevamiento de farmacias de la región para conocer las necesidades y desafíos que enfrentan en su gestión diaria.
 
-Quedo atento. ¡Muchas gracias!`
+¿Tendría unos minutos para responder una breve consulta o coordinar una llamada rápida durante la semana?
+
+Muchas gracias.`
     }
 
     const greeting = name

@@ -230,22 +230,22 @@
 
                       <div class="relative">
                         <button
-                          @click="toggleStatusMenu($event, prospect.id)"
-                          class="status-btn"
-                        >
-                          <span>{{ estadoComercialLabel(prospect.estadoComercial) }}</span>
-                          <ChevronDown class="w-3.5 h-3.5" />
-                        </button>
-                        <Teleport to="body">
-                          <div
-                            v-if="openMenuId === prospect.id"
-                            class="status-dropdown"
-                            :style="menuStyle"
+                            @click="toggleStatusMenu($event, prospect.id || prospect.place_id)"
+                            class="status-btn"
                           >
-                            <button
-                              v-for="e in estadoComercialOptions"
-                              :key="e.value"
-                              @click="selectEstado(prospect.id, e.value)"
+                            <span>{{ estadoComercialLabel(prospect.estadoComercial) }}</span>
+                            <ChevronDown class="w-3.5 h-3.5" />
+                          </button>
+                          <Teleport to="body">
+                            <div
+                              v-if="openMenuId === (prospect.id || prospect.place_id)"
+                              class="status-dropdown"
+                              :style="menuStyle"
+                            >
+                              <button
+                                v-for="e in estadoComercialOptions"
+                                :key="e.value"
+                                @click="selectEstado(prospect.id || prospect.place_id, e.value)"
                               class="status-option"
                               :class="{ selected: prospect.estadoComercial === e.value }"
                             >
@@ -493,11 +493,23 @@ function toggleStatusMenu(e, id) {
     return
   }
   const rect = e.currentTarget.getBoundingClientRect()
-  menuStyle.value = {
-    position: 'fixed',
-    top: `${rect.bottom + 4}px`,
-    left: `${rect.left}px`,
-    width: `${Math.max(rect.width, 150)}px`,
+  const estimatedHeight = estadoComercialOptions.length * 36 + 12
+  const spaceBelow = window.innerHeight - rect.bottom
+  if (spaceBelow < estimatedHeight) {
+    menuStyle.value = {
+      position: 'fixed',
+      top: `${Math.max(4, rect.top - estimatedHeight - 4)}px`,
+      left: `${rect.left}px`,
+      width: `${Math.max(rect.width, 150)}px`,
+    }
+  } else {
+    menuStyle.value = {
+      position: 'fixed',
+      top: `${rect.bottom + 4}px`,
+      left: `${rect.left}px`,
+      width: `${Math.max(rect.width, 150)}px`,
+      marginTop: '0',
+    }
   }
   openMenuId.value = id
 }
